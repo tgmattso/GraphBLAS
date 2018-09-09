@@ -25,8 +25,8 @@
  * @todo Move implementation to a C file
  */
 
-#ifndef ALGORITHM_UTILS_H
-#define ALGORITHM_UTILS_H
+#ifndef TUTORIAL_UTILS_H
+#define TUTORIAL_UTILS_H
 
 #include <GraphBLAS.h>
 

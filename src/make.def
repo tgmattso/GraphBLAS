@@ -25,8 +25,8 @@ OPTS		= -g
 WFLAGS		= -Wall 
 DEFS		=
 INCLUDE		= -I$(INCDIR)
-#LIB		= -lgraphblas -Wl,-rpath,$(LIBDIR)  -L$(LIBIDR)
-LIB		= -lgraphblasOSX -Wl,-rpath,$(LIBDIR)  -L$(LIBDIR)
+LIB		= -lgraphblas -Wl,-rpath,$(LIBDIR) -L$(LIBDIR)
+#LIB		= -lgraphblasOSX -Wl,-rpath,$(LIBDIR) -L$(LIBDIR)
 #VPATH		= ../src
 CCFLAGS		= $(OPTS) $(WFLAGS) $(DEFS) $(INCLUDE)
 
