@@ -14,7 +14,7 @@
  *
  * DM18-xxx
  *
- * Authors: Scott McMillan, Timothy G. Mattson test
+ * Authors: Scott McMillan, Timothy G. Mattson 
  */
 
 /**
