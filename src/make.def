@@ -12,21 +12,33 @@
 # full terms.
 #
 # Authors: Scott McMillan, Timothy G. Mattson
-# 
+#
 
 # Project root not used yet
 PROJECT_ROOT	= some_path_to/HPEC18_tutorial/code
 
-CC		= gcc
-#CC		= icc -std=c11
-#OPTS		= -Ofast -march=native -DNDEBUG
-#OPTS		= -g -fsanitize=address
-OPTS		= -g
-WFLAGS		= -Wall 
-DEFS		=
-INCLUDE		= -I$(INCDIR)
-LIB		= -lgraphblas -Wl,-rpath,$(LIBDIR) -L$(LIBDIR)
-#LIB		= -lgraphblasOSX -Wl,-rpath,$(LIBDIR) -L$(LIBDIR)
-#VPATH		= ../src
-CCFLAGS		= $(OPTS) $(WFLAGS) $(DEFS) $(INCLUDE)
+PLATFORM := $(shell uname -s)
 
+CC	= UNKNOW_PLATFORM
+
+ifeq ($(PLATFORM),Linux)
+	CC	= gcc
+	OPTS	= -g
+	#OPTS	= -Ofast -march=native -DNDEBUG
+	#OPTS	= -g -fsanitize=address
+	WFLAGS	= -Wall
+	DEFS	=
+	INCLUDE	= -I$(INCDIR)
+	LIB	= -lgraphblas -Wl,-rpath,$(LIBDIR) -L$(LIBDIR)
+endif
+
+ifeq ($(PLATFORM),Darwin)
+	CC	= icc -std=c11
+	OPTS	= -g
+	WFLAGS	= -Wall
+	DEFS	=
+	INCLUDE	= -I$(INCDIR)
+	LIB	= -lgraphblasOSX -Wl,-rpath,$(LIBDIR) -L$(LIBDIR)
+endif
+
+CCFLAGS	= $(OPTS) $(WFLAGS) $(DEFS) $(INCLUDE)
