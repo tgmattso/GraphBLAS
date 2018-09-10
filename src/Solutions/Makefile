@@ -41,6 +41,7 @@ all		: $(TARGETS)
 		$(CC) -S $(CCFLAGS) $<
 
 %.o  		: %.c tutorial_utils.h
+		echo $(CCFLAGS)
 		$(CC) -c $(CCFLAGS) $<
 
 %.exe  		: %.o
@@ -53,5 +54,6 @@ clean		:
 squeaky		: clean
 		/bin/rm -f $(SOURCES:%.c=%.d)
 
+.SECONDARY	: $(OBJECTS)
 
 -include $(SOURCES:%.c=%.d)

@@ -51,4 +51,6 @@ squeaky		: clean
 		/bin/rm -f $(SOURCES:%.c=%.d)
 
 
+.SECONDARY	: $(OBJECTS)
+
 -include $(SOURCES:%.c=%.d)
