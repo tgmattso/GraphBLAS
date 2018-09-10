@@ -22,25 +22,23 @@ LIBDIR      = ../../lib
 
 include ../make.def
 
-SOURCES 	= bfs_level.c betweenness_centrality.c maximal_independent_set.c \
+SOURCES 	= betweenness_centrality.c maximal_independent_set.c \
 		triangle_count.c page_rank.c
-
-##  hpec_ex2_neighbors.c hpec_ex3_level_bfs.c hpec_ex4_bfs_parents.c hpec_ex34_parent_bfs.c
 
 OBJECTS		= $(SOURCES:.c=.o)
 TARGETS		= $(SOURCES:.c=.exe)
 DSYM   		= $(SOURCES:.c=.exe.dSYM)
-HEADERS		= $(wildcard *.h)
+HEADERS		= $(wildcard $(INCDIR)/*.h)
 PCHS		= $(HEADERS:=.gch)
 
 .PHONY		: all clean
 
 all		: $(TARGETS)
 
-%.s 		: %.c tutorial_utils.h
+%.s 		: %.c $(HEADERS)
 		$(CC) -S $(CCFLAGS) $<
 
-%.o  		: %.c tutorial_utils.h
+%.o  		: %.c $(HEADERS)
 		$(CC) -c $(CCFLAGS) $<
 
 %.exe  		: %.o
@@ -53,5 +51,7 @@ clean		:
 squeaky		: clean
 		/bin/rm -f $(SOURCES:%.c=%.d)
 
+.SECONDARY	: $(OBJECTS)
 
 -include $(SOURCES:%.c=%.d)
+
