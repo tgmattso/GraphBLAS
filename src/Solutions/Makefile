@@ -30,18 +30,17 @@ SOURCES 	= BuildAdjMatTuple.c BuildAdjMatIndVec.c \
 OBJECTS		= $(SOURCES:.c=.o)
 TARGETS		= $(SOURCES:.c=.exe)
 DSYM   		= $(SOURCES:.c=.exe.dSYM)
-HEADERS		= $(wildcard *.h)
+HEADERS		= $(wildcard $(INCDIR)/*.h)
 PCHS		= $(HEADERS:=.gch)
 
 .PHONY		: all clean
 
 all		: $(TARGETS)
 
-%.s 		: %.c tutorial_utils.h
+%.s 		: %.c $(HEADERS)
 		$(CC) -S $(CCFLAGS) $<
 
-%.o  		: %.c tutorial_utils.h
-		echo $(CCFLAGS)
+%.o  		: %.c $(HEADERS)
 		$(CC) -c $(CCFLAGS) $<
 
 %.exe  		: %.o
