@@ -49,7 +49,7 @@ int main(int argc, char** argv)
 
     // Build a vector to select a source node and another
     // vector to hold the mxv result.
-    GrB_Index const SRC_NODE = 6;
+    GrB_Index const SRC_NODE = 0;
     GrB_Vector frontier, levels;
     GrB_Vector_new(&frontier, GrB_BOOL, NUM_NODES);
     GrB_Vector_new(&levels, GrB_UINT64, NUM_NODES);

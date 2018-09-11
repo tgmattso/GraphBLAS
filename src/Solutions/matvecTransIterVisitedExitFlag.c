@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 
     // Build a vector to select a source node and another
     // vector to hold the mxv result.
-    GrB_Index const SRC_NODE = 6;
+    GrB_Index const SRC_NODE = 0;
     GrB_Vector frontier, visited;
     GrB_Vector_new(&frontier, GrB_BOOL, NUM_NODES);
     GrB_Vector_new(&visited, GrB_BOOL, NUM_NODES);
@@ -58,8 +58,8 @@ int main(int argc, char** argv)
     // Build the transpose (INP0) descriptor
     GrB_Descriptor desc_st0r;
     GrB_Descriptor_new(&desc_st0r);
-    GrB_Descriptor_set(desc_st0r, GrB_MASK, GrB_SCMP);
     GrB_Descriptor_set(desc_st0r, GrB_INP0, GrB_TRAN);
+    GrB_Descriptor_set(desc_st0r, GrB_MASK, GrB_SCMP);
     GrB_Descriptor_set(desc_st0r, GrB_OUTP, GrB_REPLACE);
 
     pretty_print_vector_BOOL(frontier, "Source vector");
