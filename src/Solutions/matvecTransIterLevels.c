@@ -73,12 +73,12 @@ int main(int argc, char** argv)
     {
         GrB_mxv(frontier, levels, GrB_NULL,
                 GxB_LOR_LAND_BOOL, graph, frontier, desc_st0r);
-        pretty_print_vector_UINT64(frontier, "Frontier");
+        pretty_print_vector_BOOL(frontier, "wavefront");
 
         ++level;
         GrB_assign(levels, frontier, GrB_NULL,
                    level, GrB_ALL, NUM_NODES, GrB_NULL);
-        pretty_print_vector_UINT64(levels, "Levels");
+        pretty_print_vector_UINT64(levels, "levels");
 
         GrB_Vector_nvals(&nvals, frontier);
     }

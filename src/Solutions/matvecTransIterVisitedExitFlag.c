@@ -71,10 +71,10 @@ int main(int argc, char** argv)
     {
         GrB_mxv(frontier, visited, GrB_NULL,
                 GxB_LOR_LAND_BOOL, graph, frontier, desc_st0r);
-        pretty_print_vector_UINT64(frontier, "Frontier");
+        pretty_print_vector_UINT64(frontier, "wavefront");
         GrB_eWiseAdd(visited, GrB_NULL, GrB_NULL,
                      GrB_LOR, visited, frontier, GrB_NULL);
-        pretty_print_vector_UINT64(visited, "Visited");
+        pretty_print_vector_BOOL(visited, "visited");
         GrB_Vector_nvals(&nvals, frontier);
     }
 
