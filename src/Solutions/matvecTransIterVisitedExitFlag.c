@@ -18,7 +18,7 @@
  */
 
 /**
- * @file matvecTransIterExitFlag.c
+ * @file matvecTransIterExitFlag_v2.c
  *
  * @brief Code to hop to neighbors of a set of vertices iteratively and exit
  *        when the frontier becomes empty.
@@ -49,39 +49,40 @@ int main(int argc, char** argv)
     // Build a vector to select a source node and another
     // vector to hold the mxv result.
     GrB_Index const SRC_NODE = 0;
-    GrB_Vector frontier, visited;
-    GrB_Vector_new(&frontier, GrB_BOOL, NUM_NODES);
-    GrB_Vector_new(&visited, GrB_BOOL, NUM_NODES);
-    GrB_Vector_setElement(frontier, true, SRC_NODE);
-    GrB_Vector_setElement(visited, true, SRC_NODE);
+    GrB_Vector w, v;
+    GrB_Vector_new(&w, GrB_BOOL, NUM_NODES);
+    GrB_Vector_new(&v, GrB_BOOL, NUM_NODES);
+    GrB_Vector_setElement(w, true, SRC_NODE);
 
-    // Build the transpose (INP0) descriptor
-    GrB_Descriptor desc_st0r;
-    GrB_Descriptor_new(&desc_st0r);
-    GrB_Descriptor_set(desc_st0r, GrB_INP0, GrB_TRAN);
-    GrB_Descriptor_set(desc_st0r, GrB_MASK, GrB_SCMP);
-    GrB_Descriptor_set(desc_st0r, GrB_OUTP, GrB_REPLACE);
+    // Build the transpose/scmp/replace descriptor
+    GrB_Descriptor desc;
+    GrB_Descriptor_new(&desc);
+    GrB_Descriptor_set(desc, GrB_INP0, GrB_TRAN);
+    GrB_Descriptor_set(desc, GrB_MASK, GrB_SCMP);
+    GrB_Descriptor_set(desc, GrB_OUTP, GrB_REPLACE);
 
-    pretty_print_vector_BOOL(frontier, "Source vector");
+    pretty_print_vector_BOOL(w, "wavefront(src)");
 
     // traverse to neighbors of a frontier iteratively starting with SRC_NODE
     GrB_Index nvals = 0;
-    GrB_Vector_nvals(&nvals, frontier);
-    while (nvals > 0)
+
+    do
     {
-        GrB_mxv(frontier, visited, GrB_NULL,
-                GxB_LOR_LAND_BOOL, graph, frontier, desc_st0r);
-        pretty_print_vector_UINT64(frontier, "wavefront");
-        GrB_eWiseAdd(visited, GrB_NULL, GrB_NULL,
-                     GrB_LOR, visited, frontier, GrB_NULL);
-        pretty_print_vector_BOOL(visited, "visited");
-        GrB_Vector_nvals(&nvals, frontier);
-    }
+        GrB_eWiseAdd(v, GrB_NULL, GrB_NULL,
+                     GrB_LOR, v, w, GrB_NULL);
+        pretty_print_vector_BOOL(v, "visited");
+
+        GrB_mxv(w, v, GrB_NULL,
+                GxB_LOR_LAND_BOOL, graph, w, desc);
+        pretty_print_vector_UINT64(w, "wavefront");
+
+        GrB_Vector_nvals(&nvals, w);
+    } while (nvals > 0);
 
     // Cleanup
     GrB_free(&graph);
-    GrB_free(&frontier);
-    GrB_free(&visited);
-    GrB_free(&desc_st0r);
+    GrB_free(&w);
+    GrB_free(&v);
+    GrB_free(&desc);
     GrB_finalize();
 }

@@ -51,22 +51,22 @@ int main(int argc, char** argv)
     // Build a vector to select a source node and another
     // vector to hold the mxv result.
     GrB_Index const SRC_NODE = 6;
-    GrB_Vector select, result;
-    GrB_Vector_new(&select, GrB_BOOL, NUM_NODES);
+    GrB_Vector vec, result;
+    GrB_Vector_new(&vec, GrB_BOOL, NUM_NODES);
     GrB_Vector_new(&result, GrB_BOOL, NUM_NODES);
-    GrB_Vector_setElement(select, true, SRC_NODE);
+    GrB_Vector_setElement(vec, true, SRC_NODE);
 
     // Build the descriptor to transpose the first input arg (INP0)
-    GrB_Descriptor desc_t0;
-    GrB_Descriptor_new(&desc_t0);
-    GrB_Descriptor_set(desc_t0, GrB_INP0, GrB_TRAN);
+    GrB_Descriptor desc;
+    GrB_Descriptor_new(&desc);
+    GrB_Descriptor_set(desc, GrB_INP0, GrB_TRAN);
 
     // find neighbors of SRC_NODE
 
-    pretty_print_vector_BOOL(select, "Source vector");
+    pretty_print_vector_BOOL(vec, "source node");
     GrB_mxv(result, GrB_NULL, GrB_NULL,
-            GxB_LOR_LAND_BOOL, graph, select, desc_t0);
-    pretty_print_vector_BOOL(result, "Neighbors");
+            GxB_LOR_LAND_BOOL, graph, vec, desc);
+    pretty_print_vector_BOOL(result, "neighbors");
 
     // Check results
     {
@@ -107,8 +107,8 @@ int main(int argc, char** argv)
 
     // Cleanup
     GrB_free(&graph);
-    GrB_free(&select);
+    GrB_free(&vec);
     GrB_free(&result);
-    GrB_free(&desc_t0);
+    GrB_free(&desc);
     GrB_finalize();
 }

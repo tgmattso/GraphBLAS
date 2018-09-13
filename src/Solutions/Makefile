@@ -23,9 +23,12 @@ LIBDIR      = ../../lib
 include ../make.def
 
 SOURCES 	= BuildAdjMatTuple.c BuildAdjMatIndVec.c \
-		matvec.c matvecTrans.c matvecTransIter.c \
-		matvecTransIterVisited.c matvecTransIterVisitedExitFlag.c \
-		matvecTransIterLevels.c  bfs_level.c
+		matvec.c matvecTrans.c \
+		matvecTransIter.c \
+		matvecTransIterVisited.c \
+		matvecTransIterVisitedExitFlag.c \
+		matvecTransIterLevels.c \
+		bfs_level.c
 
 OBJECTS		= $(SOURCES:.c=.o)
 TARGETS		= $(SOURCES:.c=.exe)

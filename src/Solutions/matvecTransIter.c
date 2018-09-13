@@ -51,28 +51,28 @@ int main(int argc, char** argv)
     // Build a vector to select a source node and another
     // vector to hold the mxv result.
     GrB_Index const SRC_NODE = 0;
-    GrB_Vector frontier;
-    GrB_Vector_new(&frontier, GrB_BOOL, NUM_NODES);
-    GrB_Vector_setElement(frontier, true, SRC_NODE);
+    GrB_Vector w;
+    GrB_Vector_new(&w, GrB_BOOL, NUM_NODES);
+    GrB_Vector_setElement(w, true, SRC_NODE);
 
     // Build the transpose (INP0) descriptor
-    GrB_Descriptor desc_t0;
-    GrB_Descriptor_new(&desc_t0);
-    GrB_Descriptor_set(desc_t0, GrB_INP0, GrB_TRAN);
+    GrB_Descriptor desc;
+    GrB_Descriptor_new(&desc);
+    GrB_Descriptor_set(desc, GrB_INP0, GrB_TRAN);
 
-    pretty_print_vector_BOOL(frontier, "Source vector");
+    pretty_print_vector_BOOL(w, "wavefront(src)");
 
-    // traverse to neighbors of a frontier iteratively starting with SRC_NODE
-    for (unsigned int iter = 0; iter < 15; ++iter)
+    // traverse to neighbors of a w iteratively starting with SRC_NODE
+    for (unsigned int iter = 0; iter < 8; ++iter)
     {
-        GrB_mxv(frontier, GrB_NULL, GrB_NULL,
-                GxB_LOR_LAND_BOOL, graph, frontier, desc_t0);
-        pretty_print_vector_BOOL(frontier, "Frontier");
+        GrB_mxv(w, GrB_NULL, GrB_NULL,
+                GxB_LOR_LAND_BOOL, graph, w, desc);
+        pretty_print_vector_BOOL(w, "wavefront");
     }
 
     // Cleanup
     GrB_free(&graph);
-    GrB_free(&frontier);
-    GrB_free(&desc_t0);
+    GrB_free(&w);
+    GrB_free(&desc);
     GrB_finalize();
 }

@@ -14,7 +14,7 @@
  *
  * DM18-xxx
  *
- * Authors: Scott McMillan, Timothy G. Mattson 
+ * Authors: Scott McMillan, Timothy G. Mattson
  */
 
 /**
@@ -48,19 +48,19 @@ int main(int argc, char** argv)
 
     pretty_print_matrix_BOOL(graph, "GRAPH");
 
-    // Build a vector to select a single node in the graph (select)
+    // Build a vector to select a single node in the graph (vec)
     // and a vector to hold the result of our operation (result)
     GrB_Index const NODE = 2;
-    GrB_Vector select, result;
-    GrB_Vector_new(&select, GrB_BOOL, NUM_NODES);
+    GrB_Vector vec, result;
+    GrB_Vector_new(&vec, GrB_BOOL, NUM_NODES);
     GrB_Vector_new(&result, GrB_BOOL, NUM_NODES);
-    GrB_Vector_setElement(select, true, NODE);
+    GrB_Vector_setElement(vec, true, NODE);
 
     // find source vertices to NODE
 
-    pretty_print_vector_BOOL(select, "Target node");
+    pretty_print_vector_BOOL(vec, "Target node");
     GrB_mxv(result, GrB_NULL, GrB_NULL,
-            GxB_LOR_LAND_BOOL, graph, select, GrB_NULL);
+            GxB_LOR_LAND_BOOL, graph, vec, GrB_NULL);
     pretty_print_vector_BOOL(result, "sources");
 
     // Check results
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 
     // Cleanup
     GrB_free(&graph);
-    GrB_free(&select);
+    GrB_free(&vec);
     GrB_free(&result);
     GrB_finalize();
 }

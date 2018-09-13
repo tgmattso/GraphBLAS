@@ -18,7 +18,7 @@
  */
 
 /**
- * @file matvecTransIterExitFlag.c
+ * @file matvecTransIterLevels_v2.c
  *
  * @brief Code to hop to neighbors of a set of vertices iteratively and exit
  *        when the frontier becomes empty.  Set the level of each vertex when
@@ -50,43 +50,42 @@ int main(int argc, char** argv)
     // Build a vector to select a source node and another
     // vector to hold the mxv result.
     GrB_Index const SRC_NODE = 0;
-    GrB_Vector frontier, levels;
-    GrB_Vector_new(&frontier, GrB_BOOL, NUM_NODES);
+    GrB_Vector w, levels;
+    GrB_Vector_new(&w, GrB_BOOL, NUM_NODES);
     GrB_Vector_new(&levels, GrB_UINT64, NUM_NODES);
-    GrB_Vector_setElement(frontier, true, SRC_NODE);
-    GrB_Vector_setElement(levels, (uint64_t)1UL, SRC_NODE); // root is level = 1
+    GrB_Vector_setElement(w, true, SRC_NODE);
 
-    // Build the transpose (INP0) descriptor
-    GrB_Descriptor desc_st0r;
-    GrB_Descriptor_new(&desc_st0r);
-    GrB_Descriptor_set(desc_st0r, GrB_MASK, GrB_SCMP);
-    GrB_Descriptor_set(desc_st0r, GrB_INP0, GrB_TRAN);
-    GrB_Descriptor_set(desc_st0r, GrB_OUTP, GrB_REPLACE);
+    // Build the transpose/scmp/replace descriptor
+    GrB_Descriptor desc;
+    GrB_Descriptor_new(&desc);
+    GrB_Descriptor_set(desc, GrB_MASK, GrB_SCMP);
+    GrB_Descriptor_set(desc, GrB_INP0, GrB_TRAN);
+    GrB_Descriptor_set(desc, GrB_OUTP, GrB_REPLACE);
 
-    pretty_print_vector_BOOL(frontier, "Source vector");
+    pretty_print_vector_BOOL(w, "wavefront(src)");
 
     // traverse to neighbors of a frontier iteratively starting with SRC_NODE
+    int64_t level = 0;
     GrB_Index nvals = 0;
-    GrB_Index level = 1;
-    GrB_Vector_nvals(&nvals, frontier);
-    while (nvals > 0)
-    {
-        GrB_mxv(frontier, levels, GrB_NULL,
-                GxB_LOR_LAND_BOOL, graph, frontier, desc_st0r);
-        pretty_print_vector_BOOL(frontier, "wavefront");
 
+    do
+    {
         ++level;
-        GrB_assign(levels, frontier, GrB_NULL,
+        GrB_assign(levels, w, GrB_NULL,
                    level, GrB_ALL, NUM_NODES, GrB_NULL);
         pretty_print_vector_UINT64(levels, "levels");
 
-        GrB_Vector_nvals(&nvals, frontier);
-    }
+        GrB_mxv(w, levels, GrB_NULL,
+                GxB_LOR_LAND_BOOL, graph, w, desc);
+        pretty_print_vector_BOOL(w, "wavefront");
+
+        GrB_Vector_nvals(&nvals, w);
+    } while (nvals > 0);
 
     // Cleanup
     GrB_free(&graph);
-    GrB_free(&frontier);
+    GrB_free(&w);
     GrB_free(&levels);
-    GrB_free(&desc_st0r);
+    GrB_free(&desc);
     GrB_finalize();
 }
