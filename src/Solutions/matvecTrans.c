@@ -46,7 +46,7 @@ int main(int argc, char** argv)
     GrB_Matrix_build(graph, row_indices, col_indices, (bool*)values, NUM_EDGES,
                      GrB_LOR);
 
-    pretty_print_matrix_BOOL(graph, "GRAPH");
+    pretty_print_matrix_UINT64(graph, "GRAPH");
 
     // Build a vector to select a source node and another
     // vector to hold the mxv result.
@@ -63,10 +63,10 @@ int main(int argc, char** argv)
 
     // find neighbors of SRC_NODE
 
-    pretty_print_vector_BOOL(vec, "source node");
+    pretty_print_vector_UINT64(vec, "source node");
     GrB_mxv(result, GrB_NULL, GrB_NULL,
             GxB_LOR_LAND_BOOL, graph, vec, desc);
-    pretty_print_vector_BOOL(result, "neighbors");
+    pretty_print_vector_UINT64(result, "neighbors");
 
     // Check results
     {

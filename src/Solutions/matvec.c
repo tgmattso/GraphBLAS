@@ -46,7 +46,7 @@ int main(int argc, char** argv)
     GrB_Matrix_build(graph, row_indices, col_indices, (bool*)values, NUM_EDGES,
                      GrB_LOR);
 
-    pretty_print_matrix_BOOL(graph, "GRAPH");
+    pretty_print_matrix_UINT64(graph, "GRAPH");
 
     // Build a vector to select a single node in the graph (vec)
     // and a vector to hold the result of our operation (result)
@@ -58,10 +58,10 @@ int main(int argc, char** argv)
 
     // find source vertices to NODE
 
-    pretty_print_vector_BOOL(vec, "Target node");
+    pretty_print_vector_UINT64(vec, "Target node");
     GrB_mxv(result, GrB_NULL, GrB_NULL,
             GxB_LOR_LAND_BOOL, graph, vec, GrB_NULL);
-    pretty_print_vector_BOOL(result, "sources");
+    pretty_print_vector_UINT64(result, "sources");
 
     // Check results
     {

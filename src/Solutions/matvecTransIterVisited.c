@@ -43,7 +43,7 @@ int main(int argc, char** argv)
     GrB_Matrix_build(graph, row_indices, col_indices, (bool*)values, NUM_EDGES,
                      GrB_LOR);
 
-    pretty_print_matrix_BOOL(graph, "GRAPH");
+    pretty_print_matrix_UINT64(graph, "GRAPH");
 
     // Build a vector to select a source node and another
     // vector to hold the mxv result.
@@ -58,10 +58,10 @@ int main(int argc, char** argv)
     GrB_Descriptor_new(&desc);
     GrB_Descriptor_set(desc, GrB_INP0, GrB_TRAN);
 
-    pretty_print_vector_BOOL(w, "wavefront(src)");
+    pretty_print_vector_UINT64(w, "wavefront(src)");
 
     // traverse to neighbors of a frontier iteratively starting with SRC_NODE
-    for (unsigned int iter = 0; iter < 8; ++iter)
+    for (unsigned int iter = 0; iter < NUM_NODES; ++iter)
     {
         GrB_eWiseAdd(v, GrB_NULL, GrB_NULL,
                      GrB_LOR, v, w, GrB_NULL);

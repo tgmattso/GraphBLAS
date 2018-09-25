@@ -101,12 +101,12 @@ int main(int argc, char **argv)
     GrB_Matrix_build(graph, row_indices, col_indices, (bool*)values, NUM_EDGES,
                      GrB_LOR);
 
-    pretty_print_matrix_BOOL(graph, "GRAPH");
+    pretty_print_matrix_UINT64(graph, "GRAPH");
 
     GrB_Index const SRC_NODE = 1;
     bfs_level(&levels, graph, SRC_NODE);
 
-    pretty_print_vector_FP64(levels, "level vector (src == 1)");
+    pretty_print_vector_UINT64(levels, "level vector (src == 1)");
 
     // Cleanup
     GrB_free(&levels);
