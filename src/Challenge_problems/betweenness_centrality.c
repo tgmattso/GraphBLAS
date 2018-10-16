@@ -68,6 +68,8 @@ GrB_Info BC(GrB_Vector *delta, GrB_Matrix A, GrB_Index s)
   GrB_Descriptor_new(&tr1);
   GrB_Descriptor_set(tr1,GrB_INP0,GrB_TRAN);    // structural complement of the mask
 
+  GrB_vxm(q,p,GrB_NULL,Int32AddMul,q,A,desc);   // get the first set of out neighbors
+
   /*
    * BFS phase
    */
@@ -75,9 +77,9 @@ GrB_Info BC(GrB_Vector *delta, GrB_Matrix A, GrB_Index s)
   int32_t sum = 0;                              // sum == 0 when BFS phase is complete
   do {
     GrB_assign(sigma,GrB_NULL,GrB_NULL,q,d,GrB_ALL,n,GrB_NULL); // sigma[d,:] = q
+    GrB_eWiseAdd(p,GrB_NULL,GrB_NULL,Int32AddMul,p,q,GrB_NULL); // accumulate path counts on this level
     GrB_vxm(q,p,GrB_NULL,Int32AddMul,q,A,desc);                 // q = # paths to nodes reachable
                                                                 //    from current level
-    GrB_eWiseAdd(p,GrB_NULL,GrB_NULL,Int32AddMul,p,q,GrB_NULL); // accumulate path counts on this level
     GrB_reduce(&sum,GrB_NULL,Int32Add,q,GrB_NULL);              // sum path counts at this level
     ++d;
   } while (sum);
@@ -99,7 +101,7 @@ GrB_Info BC(GrB_Vector *delta, GrB_Matrix A, GrB_Index s)
   GrB_Vector t2; GrB_Vector_new(&t2,GrB_FP32,n);
   GrB_Vector t3; GrB_Vector_new(&t3,GrB_FP32,n);
   GrB_Vector t4; GrB_Vector_new(&t4,GrB_FP32,n);
-  for(int i=d-1; i>1; i--)
+  for(int i=d-1; i>0; i--)
   {
     GrB_assign(t1,GrB_NULL,GrB_NULL,1.0f,GrB_ALL,n,GrB_NULL);          // t1 = 1+delta
     GrB_eWiseAdd(t1,GrB_NULL,GrB_NULL,FP32Add,t1,*delta,GrB_NULL);
