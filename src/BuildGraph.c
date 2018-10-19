@@ -12,7 +12,7 @@
  * Released under a BSD (SEI)-style license, please see LICENSE.txt for
  * full terms.
  *
- * DM18-xxx
+ * DM18-1037
  *
  * Authors: Scott McMillan, Timothy G. Mattson
  */
