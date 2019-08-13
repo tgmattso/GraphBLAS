@@ -26,6 +26,10 @@
 
 // Contributed by Scott McMillan/CMU, Tim Mattson/Intel
 
+// Run the following from the src directory:
+//
+// ./AnalyzeGraph.exe Data/hpec_coauthors.mtx
+
 #include <stdio.h>
 #include "LAGraph.h"
 #include "tutorial_utils.h"
@@ -75,7 +79,9 @@ GrB_Info BFS_mark(GrB_Matrix const A, GrB_Index src_node, GrB_Vector *v)
 //------------------------------------------------------------------------------
 // connected_components:
 //------------------------------------------------------------------------------
-GrB_Info CC_iterative(GrB_Matrix const A, GrB_Vector *components)
+GrB_Info CC_iterative(GrB_Matrix const  A,
+                      GrB_Vector       *components,
+                      GrB_Index        *num_components)
 {
     GrB_Index n;
     GrB_Matrix_nrows(&n, A);
@@ -84,7 +90,7 @@ GrB_Info CC_iterative(GrB_Matrix const A, GrB_Vector *components)
     GrB_Vector v;
     GrB_Vector_new(&v, GrB_BOOL, n);  // visited list
 
-    GrB_Index num_components = 0;
+    *num_components = 0;
     GrB_Index max_component_num = 0;
     GrB_Index max_component_size = 0;
 
@@ -99,12 +105,12 @@ GrB_Info CC_iterative(GrB_Matrix const A, GrB_Vector *components)
             // Merge visited list into components (give component source node name)
             // components[v] = src_node
             GrB_assign(*components, v, GrB_NULL, src_node, GrB_ALL, n, GrB_NULL);
-            ++num_components;
+            ++(*num_components);
 
             // Just for curiousity...not needed...
             GrB_Index component_size;
             GrB_Vector_nvals(&component_size, v);
-            printf("Component %ld: num nodes = %ld\n", src_node, component_size);
+            //printf("Component %ld: num nodes = %ld\n", src_node, component_size);
             if (component_size > max_component_size)
             {
                 max_component_size = component_size;
@@ -115,7 +121,6 @@ GrB_Info CC_iterative(GrB_Matrix const A, GrB_Vector *components)
         }
     }
 
-    printf("%ld components found.\n", num_components);
     printf("Largest component #%ld (size = %ld)\n", max_component_num, max_component_size);
     GrB_free(&v);
     return GrB_SUCCESS;
@@ -178,21 +183,39 @@ int main (int argc, char **argv)
     printf("Author with the most coauthor/paper combos: %ld (count: %ld)\n", max_index, max_val);
 
     // Use LACC connected components algorithm
+    printf("#1: Running LAGraphs LACC algorithm\n");
     GrB_Vector LACC_result;
+    LAGraph_tic (tic);
     LAGraph_lacc(A, &LACC_result);
-    pretty_print_vector_UINT64(LACC_result, "Connected components");
+    t = LAGraph_toc(tic) ;
+    printf ("time taken: %g sec\n", t) ;
 
+    // get the number of components found in LACC
     GrB_Index num_components;
     CountCC(LACC_result, &num_components);
     printf("Number of connected components: %ld\n", num_components);
+
+    //pretty_print_vector_UINT64(LACC_result, "Connected components #1");
 
     GrB_Index max_component = 666;
     GrB_Vector_extractElement(&max_component, LACC_result, max_index);
     printf("Component for author %ld: %ld\n", max_index, max_component);
 
+    // Run the CC algorithm above
+    printf("#2: Running naive CC algorithm\n");
     GrB_Vector components;
-    CC_iterative(A, &components);
-    //pretty_print_vector_UINT64(components, "Connected components");
+    GrB_Index  num_comps;
+    LAGraph_tic (tic);
+    CC_iterative(A, &components, &num_comps);
+    t = LAGraph_toc(tic) ;
+    printf ("time taken: %g sec\n", t) ;
+
+    printf("Number of connected components: %ld\n", num_comps);
+
+    //pretty_print_vector_UINT64(components, "Connected components #2");
+
+    GrB_Vector_extractElement(&max_component, components, max_index);
+    printf("Component for author %ld: %ld\n", max_index, max_component);
 
     GrB_free(&A);
     LAGraph_finalize ( ) ;
