@@ -40,6 +40,87 @@
     }                                                                       \
 }
 
+// From LACC_GraphBLAS.c in LAGraph
+GrB_Info CountCC(GrB_Vector parents, GrB_Index* countcc);
+
+//------------------------------------------------------------------------------
+// BFS visited: (from matvecTransIterVisitedExitFlag.c)
+//------------------------------------------------------------------------------
+GrB_Info BFS_mark(GrB_Matrix const A, GrB_Index src_node, GrB_Vector *v)
+{
+    GrB_Index n;
+    GrB_Matrix_nrows(&n, A);
+    GrB_Vector w;
+    GrB_Vector_new(&w, GrB_BOOL, n);  // wavefront
+    GrB_Vector_setElement(w, true, src_node);
+
+    GrB_Descriptor desc;                          // Descriptor for vxm: replace+scmp
+    GrB_Descriptor_new(&desc);
+    GrB_Descriptor_set(desc, GrB_MASK, GrB_SCMP);
+    GrB_Descriptor_set(desc, GrB_OUTP, GrB_REPLACE);
+
+    // traverse to neighbors of a frontier iteratively starting with SRC_NODE
+    GrB_Index nvals = 0;
+
+    do
+    {
+        GrB_eWiseAdd(*v, GrB_NULL, GrB_NULL, GrB_LOR, *v, w, GrB_NULL);
+        GrB_vxm(w, *v, GrB_NULL, GxB_LOR_LAND_BOOL, w, A, desc);
+        GrB_Vector_nvals(&nvals, w);
+    } while (nvals > 0);
+
+    return GrB_SUCCESS;
+}
+
+//------------------------------------------------------------------------------
+// connected_components:
+//------------------------------------------------------------------------------
+GrB_Info CC_iterative(GrB_Matrix const A, GrB_Vector *components)
+{
+    GrB_Index n;
+    GrB_Matrix_nrows(&n, A);
+    GrB_Vector_new(components, GrB_UINT64, n);
+
+    GrB_Vector v;
+    GrB_Vector_new(&v, GrB_BOOL, n);  // visited list
+
+    GrB_Index num_components = 0;
+    GrB_Index max_component_num = 0;
+    GrB_Index max_component_size = 0;
+
+    for (GrB_Index src_node = 0; src_node < n; ++src_node)
+    {
+        GrB_Index c_num;
+        if (GrB_NO_VALUE == GrB_Vector_extractElement(&c_num, *components, src_node))
+        {
+            // Traverse as far as you can go from src_node marking all visited nodes
+            BFS_mark(A, src_node, &v);
+
+            // Merge visited list into components (give component source node name)
+            // components[v] = src_node
+            GrB_assign(*components, v, GrB_NULL, src_node, GrB_ALL, n, GrB_NULL);
+            ++num_components;
+
+            // Just for curiousity...not needed...
+            GrB_Index component_size;
+            GrB_Vector_nvals(&component_size, v);
+            printf("Component %ld: num nodes = %ld\n", src_node, component_size);
+            if (component_size > max_component_size)
+            {
+                max_component_size = component_size;
+                max_component_num = src_node;
+            }
+
+            GrB_Vector_clear(v);
+        }
+    }
+
+    printf("%ld components found.\n", num_components);
+    printf("Largest component #%ld (size = %ld)\n", max_component_num, max_component_size);
+    GrB_free(&v);
+    return GrB_SUCCESS;
+}
+
 //------------------------------------------------------------------------------
 // read_mtx main:
 //------------------------------------------------------------------------------
@@ -101,9 +182,17 @@ int main (int argc, char **argv)
     LAGraph_lacc(A, &LACC_result);
     pretty_print_vector_UINT64(LACC_result, "Connected components");
 
+    GrB_Index num_components;
+    CountCC(LACC_result, &num_components);
+    printf("Number of connected components: %ld\n", num_components);
+
     GrB_Index max_component = 666;
     GrB_Vector_extractElement(&max_component, LACC_result, max_index);
     printf("Component for author %ld: %ld\n", max_index, max_component);
+
+    GrB_Vector components;
+    CC_iterative(A, &components);
+    //pretty_print_vector_UINT64(components, "Connected components");
 
     GrB_free(&A);
     LAGraph_finalize ( ) ;
