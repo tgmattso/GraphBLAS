@@ -29,7 +29,7 @@ ifeq ($(PLATFORM),Linux)
 	WFLAGS	= -Wall
 	DEFS	=
 	INCLUDE	= -I$(INCDIR)
-	LIB	= -llagraph -lgraphblas -Wl,-rpath,$(LIBDIR) -L$(LIBDIR)
+	LIB	= -llagraph -lgraphblas -lm -Wl,-rpath,$(LIBDIR) -L$(LIBDIR)
 endif
 
 ifeq ($(PLATFORM),Darwin)
@@ -38,7 +38,7 @@ ifeq ($(PLATFORM),Darwin)
 	WFLAGS	= -Wall
 	DEFS	=
 	INCLUDE	= -I$(INCDIR)
-	LIB	= -llagraphOSX -lgraphblasOSX -Wl,-rpath,$(LIBDIR) -L$(LIBDIR)
+	LIB	= -llagraphOSX -lgraphblasOSX -lm -Wl,-rpath,$(LIBDIR) -L$(LIBDIR)
 endif
 
 CCFLAGS	= $(OPTS) $(WFLAGS) $(DEFS) $(INCLUDE)
