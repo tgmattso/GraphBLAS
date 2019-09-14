@@ -28,17 +28,14 @@
 
 // Run the following from the src directory:
 //
-// ./LoadGraph.exe Data/hpec_coauthors.mtx
+// ./AnalyzeGraph.exe Data/hpec_coauthors.mtx
 
 #include <stdio.h>
 #include <assert.h>
-#include <math.h>
-
-#include "GraphBLAS.h"
 #include "LAGraph.h"
 #include "tutorial_utils.h"
 
-// HACK: To expose convenience function from LACC_GraphBLAS.c in LAGraph
+// From LACC_GraphBLAS.c in LAGraph
 GrB_Info CountCC(GrB_Vector parents, GrB_Index* countcc);
 
 //------------------------------------------------------------------------------
@@ -48,6 +45,85 @@ GrB_Index G_target_id = 0;
 void eq_target(void *z, const void *x)
 {
     (*(bool*)z) = (bool)((*(GrB_Index*)x) == G_target_id);
+}
+
+//------------------------------------------------------------------------------
+// BFS visited: (from matvecTransIterVisitedExitFlag.c)
+//------------------------------------------------------------------------------
+GrB_Info BFS(GrB_Matrix const A, GrB_Index src_node, GrB_Vector v)
+{
+    GrB_Index n;
+    GrB_Matrix_nrows(&n, A);
+    GrB_Vector w;
+    GrB_Vector_new(&w, GrB_BOOL, n);  // wavefront
+    GrB_Vector_setElement(w, true, src_node);
+
+    GrB_Descriptor desc;                          // Descriptor for vxm: replace+scmp
+    GrB_Descriptor_new(&desc);
+    GrB_Descriptor_set(desc, GrB_MASK, GrB_SCMP);
+    GrB_Descriptor_set(desc, GrB_OUTP, GrB_REPLACE);
+
+    // traverse to neighbors of a frontier iteratively starting with SRC_NODE
+    GrB_Index nvals = 0;
+
+    do
+    {
+        GrB_eWiseAdd(v, GrB_NULL, GrB_NULL, GrB_LOR, v, w, GrB_NULL);
+        GrB_vxm(w, v, GrB_NULL, GxB_LOR_LAND_BOOL, w, A, desc);
+        GrB_Vector_nvals(&nvals, w);
+    } while (nvals > 0);
+
+    return GrB_SUCCESS;
+}
+
+//------------------------------------------------------------------------------
+// connected_components:
+//------------------------------------------------------------------------------
+GrB_Info ConnectedComponents(GrB_Matrix const  A,
+                             GrB_Vector       *components,
+                             GrB_Index        *num_components)
+{
+    GrB_Index n;
+    GrB_Matrix_nrows(&n, A);
+    GrB_Vector_new(components, GrB_UINT64, n);
+
+    GrB_Vector v;
+    GrB_Vector_new(&v, GrB_BOOL, n);  // visited list
+
+    *num_components = 0;
+    GrB_Index max_component_num = 0;
+    GrB_Index max_component_size = 0;
+
+    for (GrB_Index src_node = 0; src_node < n; ++src_node)
+    {
+        GrB_Index c_num;
+        if (GrB_NO_VALUE == GrB_Vector_extractElement(&c_num, *components, src_node))
+        {
+            // Traverse as far as you can go from src_node marking all visited nodes
+            BFS(A, src_node, v);
+
+            // Merge visited list into components (give component source node name)
+            // components[v] = src_node
+            GrB_assign(*components, v, GrB_NULL, src_node, GrB_ALL, n, GrB_NULL);
+            ++(*num_components);
+
+            // Just for curiousity...not needed...
+            GrB_Index component_size;
+            GrB_Vector_nvals(&component_size, v);
+            //printf("Component %ld: num nodes = %ld\n", src_node, component_size);
+            if (component_size > max_component_size)
+            {
+                max_component_size = component_size;
+                max_component_num = src_node;
+            }
+
+            GrB_Vector_clear(v);
+        }
+    }
+
+    printf("Largest component #%ld (size = %ld)\n", max_component_num, max_component_size);
+    GrB_free(&v);
+    return GrB_SUCCESS;
 }
 
 //------------------------------------------------------------------------------
@@ -64,7 +140,7 @@ int main (int argc, char **argv)
     // Call LAGraph_init() instead of GrB_init(GrB_BLOCKING)
     LAGraph_init();
 
-    double tic[2], t;  // for timing
+    double tic[2], t;
 
     //------------------------------------------------------------------
     printf("*** Step 1: loading input graph: %s\n", argv[1]);
@@ -127,20 +203,17 @@ int main (int argc, char **argv)
     }
 
     //============================================================
-    printf("*** Step 3: Running LAGraph's connected components (LACC) algorithm.\n");
+    //============================================================
+    // Replace this step with code produced in the tutorial
+    //============================================================
+    //============================================================
+    printf("*** Step 3: Running Tutorial connected components algorithm.\n");
     GrB_Vector components = NULL;
     GrB_Index  num_components = 0;
 
     LAGraph_tic (tic);
-
-    //============================================================
-    // Replace this step with code produced in the tutorial
-    //============================================================
-    LAGraph_lacc(A, &components);
-    CountCC(components, &num_components);  // compute number of components
-    //============================================================
-
-    t = LAGraph_toc(tic);
+    ConnectedComponents(A, &components, &num_components);
+    t = LAGraph_toc(tic) ;
     printf ("*** Step 3: Elapsed time: %g sec\n", t);
 
     printf("Number of connected components: %ld\n", num_components);
@@ -234,7 +307,7 @@ int main (int argc, char **argv)
     GrB_Index count = 0;
     double threshold = 0.25*max_rank;
     printf("Authors with rank > %lf:\n", threshold);
-    printf("ID:\tTop Rank\n");
+    printf("ID:\tRank\n");
     for (GrB_Index ix = 0; ix < component_size; ++ix)
     {
         double rank=-1.;
@@ -262,5 +335,5 @@ int main (int argc, char **argv)
 
     // Call instead of GrB_finalize();
     LAGraph_finalize();
-    return (GrB_SUCCESS);
+    return (GrB_SUCCESS) ;
 }
