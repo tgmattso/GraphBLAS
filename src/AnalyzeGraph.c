@@ -31,36 +31,26 @@
 // ./AnalyzeGraph.exe Data/hpec_coauthors.mtx
 
 #include <stdio.h>
+#include <assert.h>
 #include "LAGraph.h"
 #include "tutorial_utils.h"
-
-#define OK(method)                                                          \
-{                                                                           \
-    GrB_Info this_info = method ;                                           \
-    if (! (this_info == GrB_SUCCESS || this_info == GrB_NO_VALUE))          \
-    {                                                                       \
-        printf ("GrB failure: [%d] %s\n", this_info, GrB_error ( )) ;       \
-        return (this_info) ;                                                \
-    }                                                                       \
-}
 
 // From LACC_GraphBLAS.c in LAGraph
 GrB_Info CountCC(GrB_Vector parents, GrB_Index* countcc);
 
 //------------------------------------------------------------------------------
+// Find all elements containing a given value (G_target_id)
 GrB_Index G_target_id = 0;
 
 void eq_target(void *z, const void *x)
 {
     (*(bool*)z) = (bool)((*(GrB_Index*)x) == G_target_id);
-    //printf("target %ld : element %ld => %d\n", G_target_id, (*(GrB_Index*)x),
-    //       (*(bool*)z));
 }
 
 //------------------------------------------------------------------------------
 // BFS visited: (from matvecTransIterVisitedExitFlag.c)
 //------------------------------------------------------------------------------
-GrB_Info BFS_mark(GrB_Matrix const A, GrB_Index src_node, GrB_Vector v)
+GrB_Info BFS(GrB_Matrix const A, GrB_Index src_node, GrB_Vector v)
 {
     GrB_Index n;
     GrB_Matrix_nrows(&n, A);
@@ -89,9 +79,9 @@ GrB_Info BFS_mark(GrB_Matrix const A, GrB_Index src_node, GrB_Vector v)
 //------------------------------------------------------------------------------
 // connected_components:
 //------------------------------------------------------------------------------
-GrB_Info CC_iterative(GrB_Matrix const  A,
-                      GrB_Vector       *components,
-                      GrB_Index        *num_components)
+GrB_Info ConnectedComponents(GrB_Matrix const  A,
+                             GrB_Vector       *components,
+                             GrB_Index        *num_components)
 {
     GrB_Index n;
     GrB_Matrix_nrows(&n, A);
@@ -110,7 +100,7 @@ GrB_Info CC_iterative(GrB_Matrix const  A,
         if (GrB_NO_VALUE == GrB_Vector_extractElement(&c_num, *components, src_node))
         {
             // Traverse as far as you can go from src_node marking all visited nodes
-            BFS_mark(A, src_node, v);
+            BFS(A, src_node, v);
 
             // Merge visited list into components (give component source node name)
             // components[v] = src_node
@@ -147,90 +137,97 @@ int main (int argc, char **argv)
         return 1;
     }
 
-    #if defined ( GxB_SUITESPARSE_GRAPHBLAS )
-    printf ("testing LAGraph_xinit (requires SuiteSparse:GraphBLAS)\n") ;
-    LAGraph_xinit (malloc, calloc, realloc, free, true) ;
-    #else
-    printf ("LAGraph_init\n") ;
-    LAGraph_init ( ) ;
-    #endif
+    // Call LAGraph_init() instead of GrB_init(GrB_BLOCKING)
+    LAGraph_init();
 
-    printf("reading input graph: %s\n", argv[1]);
+    double tic[2], t;
+
+    //------------------------------------------------------------------
+    printf("*** Step 1: loading input graph: %s\n", argv[1]);
     GrB_Matrix A = NULL;
     FILE *fd = fopen(argv[1], "r");
 
-    double tic[2], t;
     LAGraph_tic (tic);
-    OK (LAGraph_mmread (&A, fd); )
-    t = LAGraph_toc(tic) ;
+    if (GrB_SUCCESS != LAGraph_mmread(&A, fd))
+    {
+        fprintf(stderr, "ERROR: Failed to load graph: %s\n", argv[1]);
+        exit(-1);
+    }
+    t = LAGraph_toc(tic);
     if (fd != NULL) fclose(fd);
-    printf ("time taken: %g sec\n", t) ;
+    printf("*** Step 1: Elapsed time: %g sec\n", t);
 
+    //------------------------------------------------------------------
+    printf("*** Step 2: compute some basic statistics\n");
     GrB_Index num_rows, num_cols, num_vals;
     GrB_Matrix_nrows(&num_rows, A);
     GrB_Matrix_ncols(&num_cols, A);
     GrB_Matrix_nvals(&num_vals, A);
-    printf ("nrows/ncols/nvals = %ld/%ld/%ld\n", num_rows, num_cols, num_vals);
+    assert(num_rows == num_cols);
 
+    // Compute node with the maximum some of outgoing edge weights
+    // (author w/ most coauthor/paper combos) via row reduction of the
+    // weighted adjacency matrix
     GrB_Vector degree;
     GrB_Vector_new(&degree, GrB_UINT64, num_rows);
+    LAGraph_tic (tic);
     GrB_reduce(degree, GrB_NULL, GrB_NULL, GrB_PLUS_UINT64, A, GrB_NULL);
 
-    GrB_Index max_val, target_index;
+    uint64_t  max_degree = 0;
+    GrB_reduce(&max_degree, GrB_NULL, GxB_MAX_UINT64_MONOID, degree, GrB_NULL);
+
+    uint64_t  min_degree = UINT64_MAX;
+    GrB_reduce(&min_degree, GrB_NULL, GxB_MIN_UINT64_MONOID, degree, GrB_NULL);
+
+    t = LAGraph_toc(tic);
+    printf("*** Step 2: Elapsed time: %g sec\n", t);
+    printf("Num nodes:  %ld\n", num_rows);
+    printf("Num edges:  %ld\n", num_vals);
+    printf("Avg degree: %lf\n", ((double)num_vals)/((double)num_rows));
+    printf("Max degree: %ld\n", max_degree);
+    printf("Min degree: %ld\n", min_degree);
+
+    GrB_Index target_index = 0;
     for (GrB_Index ix = 0; ix < num_rows; ++ix)
     {
-        GrB_Index val;
+        GrB_Index val = 0;
         if (GrB_NO_VALUE != GrB_Vector_extractElement(&val, degree, ix))
         {
-            if (val > max_val)
+            if (val == max_degree)
             {
-                max_val   = val;
+                // This is the author with the most coauthor/paper combos at HPEC
                 target_index = ix;
+                printf("Node with max degree (target ID): %ld\n", target_index);
             }
         }
     }
 
-    printf("Author with the most coauthor/paper combos: %ld (count: %ld)\n", target_index, max_val);
-
     //============================================================
-    // Use LAGraph's LACC connected components algorithm
-    printf("#1: Running LAGraphs LACC algorithm\n");
-    GrB_Vector LACC_result;
-    LAGraph_tic (tic);
-    LAGraph_lacc(A, &LACC_result);
-    t = LAGraph_toc(tic) ;
-    printf ("time taken: %g sec\n", t) ;
+    //============================================================
+    // Replace this step with code produced in the tutorial
+    //============================================================
+    //============================================================
+    printf("*** Step 3: Running Tutorial connected components algorithm.\n");
+    GrB_Vector components = NULL;
+    GrB_Index  num_components = 0;
 
-    // get the number of components found in LACC
-    GrB_Index num_components;
-    CountCC(LACC_result, &num_components);
+    LAGraph_tic (tic);
+    ConnectedComponents(A, &components, &num_components);
+    t = LAGraph_toc(tic) ;
+    printf ("*** Step 3: Elapsed time: %g sec\n", t);
+
     printf("Number of connected components: %ld\n", num_components);
 
-    //pretty_print_vector_UINT64(LACC_result, "Connected components #1");
+    //pretty_print_vector_UINT64(components, "Connected components");
 
     GrB_Index cluster_num = 666;
-    GrB_Vector_extractElement(&cluster_num, LACC_result, target_index);
-    printf("Component for author %ld: %ld\n", target_index, cluster_num);
-
-    //============================================================
-    // Run the class generated CC algorithm above
-    printf("#2: Running naive CC algorithm\n");
-    GrB_Vector components;
-    GrB_Index  num_comps;
-    LAGraph_tic (tic);
-    CC_iterative(A, &components, &num_comps);
-    t = LAGraph_toc(tic) ;
-    printf ("time taken: %g sec\n", t) ;
-
-    printf("Number of connected components: %ld\n", num_comps);
-
-    //pretty_print_vector_UINT64(components, "Connected components #2");
-
     GrB_Vector_extractElement(&cluster_num, components, target_index);
-    printf("Component for author %ld: %ld\n", target_index, cluster_num);
+    printf("ID for component containing target ID %ld: %ld\n",
+           target_index, cluster_num);
 
     //===========================================================
-    // Find all the elements in the target cluster
+    printf("*** Step 4: Find all the nodes from the target ID's cluster.\n");
+    LAGraph_tic(tic);
     G_target_id = cluster_num;
     GrB_UnaryOp target_eq = NULL;
     GrB_UnaryOp_new(&target_eq, &eq_target, GrB_BOOL, GrB_UINT64);
@@ -244,7 +241,6 @@ int main (int argc, char **argv)
 
     GrB_Index nc;
     GrB_Vector_nvals(&nc, cluster_mask);
-    printf("Cluster mask nvals (before masking): %ld\n", nc);
 
     // remove all elements that have 'stored false'
     GrB_Descriptor desc;
@@ -255,21 +251,24 @@ int main (int argc, char **argv)
               GrB_IDENTITY_BOOL, cluster_mask, desc);
 
     GrB_Vector_nvals(&nc, cluster_mask);
-    printf("Cluster mask nvals (after masking): %ld\n", nc);
 
     // get number of elements in the mask and extract the indices
     GrB_Index component_size;
     GrB_Vector_nvals(&component_size, cluster_mask);
-    printf("Component size: %ld\n", component_size);
     GrB_Index *cluster_indices = malloc(component_size*sizeof(GrB_Index));
     bool      *vals = malloc(component_size*sizeof(bool));
 
     GrB_Vector_extractTuples(cluster_indices, vals,
                              &component_size, cluster_mask);
-    printf("Extracted component size: %ld\n", component_size);
+    t = LAGraph_toc(tic);
+    printf("*** Step 4: Elapsed time: %g sec\n", t);
+
+    printf("Cluster mask nvals (after masking): %ld\n", nc);
+    printf("Component size: %ld\n", component_size);
 
     //===========================================================
-    // extract the component from the rest of the graph
+    printf("*** Step 5: extract and perform PageRank on the target component.\n");
+    LAGraph_tic (tic);
     GrB_Matrix A_comp;
     GrB_Matrix_new(&A_comp, GrB_UINT64, component_size, component_size);
     GrB_extract(A_comp, GrB_NULL, GrB_NULL, A,
@@ -278,32 +277,63 @@ int main (int argc, char **argv)
                 GrB_NULL);
 
     GrB_Vector pr;
-    double max_rank = 0.0;
-    GrB_Index max_rank_id;
+    double max_rank = 0.0, min_rank = 9999999999.9;
+    GrB_Index max_rank_id, min_rank_id;
     LAGraph_pagerank2(&pr, A_comp, 0.85, 100);
-    printf("ID:\tRank\n");
+    t = LAGraph_toc(tic);
+    printf("*** Step 5: Elapsed time: %g sec\n", t);
+
+    //printf("ID:\tRank\n");
     for (GrB_Index ix = 0; ix < component_size; ++ix)
     {
         double rank=-1.;
         GrB_Vector_extractElement(&rank, pr, ix);
-        printf("%ld\t%lf\n", cluster_indices[ix], rank);
+        //printf("%ld\t%lf\n", cluster_indices[ix], rank);
         if (rank > max_rank)
         {
             max_rank = rank;
             max_rank_id = cluster_indices[ix];
         }
+        if (rank < min_rank)
+        {
+            min_rank = rank;
+            min_rank_id = cluster_indices[ix];
+        }
     }
 
     printf("Author with the highest rank: %ld (%lf)\n", max_rank_id, max_rank);
+    printf("Author with the smallest rank: %ld (%lf)\n", min_rank_id, min_rank);
+
+    GrB_Index count = 0;
+    double threshold = 0.25*max_rank;
+    printf("Authors with rank > %lf:\n", threshold);
+    printf("ID:\tTop Rank\n");
+    for (GrB_Index ix = 0; ix < component_size; ++ix)
+    {
+        double rank=-1.;
+        GrB_Vector_extractElement(&rank, pr, ix);
+        if (rank > threshold)
+        {
+            printf("%ld\t%lf\n", cluster_indices[ix], rank);
+            ++count;
+        }
+    }
+
+    printf("Num authors with rank > %lf: %ld\n", threshold, count);
 
     //===========================================================
-    free(cluster_indices);
-    free(vals);
+    GrB_free(&A_comp);
+    GrB_free(&desc);
     GrB_free(&cluster_mask);
     GrB_free(&target_eq);
-    GrB_free(&LACC_result);
+    GrB_free(&degree);
     GrB_free(&components);
     GrB_free(&A);
-    LAGraph_finalize ( ) ;
+
+    free(cluster_indices);
+    free(vals);
+
+    // Call instead of GrB_finalize();
+    LAGraph_finalize();
     return (GrB_SUCCESS) ;
 }

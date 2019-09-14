@@ -42,13 +42,12 @@
 GrB_Info CountCC(GrB_Vector parents, GrB_Index* countcc);
 
 //------------------------------------------------------------------------------
+// Find all elements containing a given value (G_target_id)
 GrB_Index G_target_id = 0;
 
 void eq_target(void *z, const void *x)
 {
     (*(bool*)z) = (bool)((*(GrB_Index*)x) == G_target_id);
-    //printf("target %ld : element %ld => %d\n", G_target_id, (*(GrB_Index*)x),
-    //       (*(bool*)z));
 }
 
 //------------------------------------------------------------------------------
@@ -62,14 +61,8 @@ int main (int argc, char **argv)
         return 1;
     }
 
-    // Call LAGraph_init() instead of GrB_init()
-    #if defined(GxB_SUITESPARSE_GRAPHBLAS)
-    printf("LAGraph_xinit (requires SuiteSparse:GraphBLAS)\n");
-    LAGraph_xinit(malloc, calloc, realloc, free, true);
-    #else
-    printf("LAGraph_init\n");
+    // Call LAGraph_init() instead of GrB_init(GrB_BLOCKING)
     LAGraph_init();
-    #endif
 
     double tic[2], t;  // for timing
 
@@ -135,23 +128,27 @@ int main (int argc, char **argv)
 
     //============================================================
     printf("*** Step 3: Running LAGraph's connected components (LACC) algorithm.\n");
-    GrB_Vector LACC_result;
+    GrB_Vector components = NULL;
+    GrB_Index  num_components = 0;
 
     LAGraph_tic (tic);
-    LAGraph_lacc(A, &LACC_result);
+
+    //============================================================
+    // Replace this step with code produced in the tutorial
+    //============================================================
+    LAGraph_lacc(A, &components);
+    CountCC(components, &num_components);  // compute number of components
+    //============================================================
+
     t = LAGraph_toc(tic);
     printf ("*** Step 3: Elapsed time: %g sec\n", t);
 
-    // get the number of components found in LACC
-    GrB_Index num_components = 0;
-    CountCC(LACC_result, &num_components);
     printf("Number of connected components: %ld\n", num_components);
 
-    //pretty_print_vector_UINT64(LACC_result, "Connected components #1");
-    // TODO: do a histogram on LACC_result to get ID,size of each CC
+    //pretty_print_vector_UINT64(components, "Connected components");
 
     GrB_Index cluster_num = 666;
-    GrB_Vector_extractElement(&cluster_num, LACC_result, target_index);
+    GrB_Vector_extractElement(&cluster_num, components, target_index);
     printf("ID for component containing target ID %ld: %ld\n",
            target_index, cluster_num);
 
@@ -167,7 +164,7 @@ int main (int argc, char **argv)
 
     // Find all elements belonging to cluster labeled cluster_num
     GrB_apply(cluster_mask, GrB_NULL, GrB_NULL,
-              target_eq, LACC_result, GrB_NULL);
+              target_eq, components, GrB_NULL);
 
     GrB_Index nc;
     GrB_Vector_nvals(&nc, cluster_mask);
@@ -252,12 +249,18 @@ int main (int argc, char **argv)
     printf("Num authors with rank > %lf: %ld\n", threshold, count);
 
     //===========================================================
-    free(cluster_indices);
-    free(vals);
+    GrB_free(&A_comp);
+    GrB_free(&desc);
     GrB_free(&cluster_mask);
     GrB_free(&target_eq);
-    GrB_free(&LACC_result);
+    GrB_free(&degree);
+    GrB_free(&components);
     GrB_free(&A);
+
+    free(cluster_indices);
+    free(vals);
+
+    // Call instead of GrB_finalize();
     LAGraph_finalize();
     return (GrB_SUCCESS);
 }
