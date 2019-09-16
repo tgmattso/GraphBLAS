@@ -30,12 +30,12 @@
 #include "tutorial_utils.h"
 
 //****************************************************************************
-GrB_Info BFS(GrB_Matrix const A,
+GrB_Info BFS(GrB_Matrix const graph,
              GrB_Index        src_node,
              GrB_Vector       v)
 {
     GrB_Index num_nodes;
-    GrB_Matrix_nrows(&num_nodes, A);
+    GrB_Matrix_nrows(&num_nodes, graph);
     GrB_Vector w;
     GrB_Vector_new(&w, GrB_BOOL, num_nodes);
     GrB_Vector_setElement(w, true, src_node);
@@ -46,13 +46,19 @@ GrB_Info BFS(GrB_Matrix const A,
     GrB_Descriptor_set(desc, GrB_MASK, GrB_SCMP);
     GrB_Descriptor_set(desc, GrB_OUTP, GrB_REPLACE);
 
+    pretty_print_vector_UINT64(w, "wavefront(src)");
+
     // traverse to neighbors of a frontier iteratively starting with src_node
     GrB_Index nvals = 0;
 
     do
     {
         GrB_eWiseAdd(v, GrB_NULL, GrB_NULL, GrB_LOR, v, w, GrB_NULL);
-        GrB_mxv(w, v, GrB_NULL, GxB_LOR_LAND_BOOL, A, w, desc);
+        pretty_print_vector_UINT64(v, "visited");
+
+        GrB_mxv(w, v, GrB_NULL, GxB_LOR_LAND_BOOL, graph, w, desc);
+        pretty_print_vector_UINT64(w, "wavefront");
+
         GrB_Vector_nvals(&nvals, w);
     } while (nvals > 0);
 
@@ -89,38 +95,36 @@ int main(int argc, char** argv)
     pretty_print_matrix_UINT64(graph, "GRAPH");
 
     // ------------------ connected components algorithm ------------------
-    GrB_Index num_components = 0;
-    GrB_Vector components;
-    GrB_Vector_new(&components, GrB_UINT64, NUM_NODES);
-
-    GrB_Vector v;
-    GrB_Vector_new(&v, GrB_BOOL, NUM_NODES);
+    GrB_Index tmp = 0, num_ccs = 0;
+    GrB_Vector cc_ids, visited;
+    GrB_Vector_new(&cc_ids, GrB_UINT64, NUM_NODES);
+    GrB_Vector_new(&visited, GrB_BOOL, NUM_NODES);
 
     // Build a vector to select a source node and another
     // vector to hold the mxv result.
-    for (GrB_Index src_node = 0; src_node < NUM_NODES; ++src_node)
+    for (GrB_Index src = 0; src < NUM_NODES; ++src)
     {
-        GrB_Index tmp;
         if (GrB_NO_VALUE ==
-            GrB_Vector_extractElement(&tmp, components, src_node))
+            GrB_Vector_extractElement(&tmp, cc_ids, src))
         {
             // Traverse from src_node marking all visited nodes
-            BFS(graph, src_node, v);
+            BFS(graph, src, visited);
 
-            // Merge visited list into components (use source node as ID)
-            // components[v] = src_node
-            GrB_assign(components, v, GrB_NULL,
-                       src_node, GrB_ALL, NUM_NODES, GrB_NULL);
-            ++num_components;
+            // Merge visited list into cc_ids (use source node as ID)
+            // cc_ids[visited] = src
+            GrB_assign(cc_ids, visited, GrB_NULL,
+                       src, GrB_ALL, NUM_NODES, GrB_NULL);
+            ++num_ccs;
         }
-        GrB_Vector_clear(v);
+        GrB_Vector_clear(visited);
     }
 
-    pretty_print_vector_UINT64(components, "Component IDs");
+    printf("Number of connected components: %ld\n", (unsigned long)num_ccs);
+    pretty_print_vector_UINT64(cc_ids, "CC IDs");
 
     // Cleanup
     GrB_free(&graph);
-    GrB_free(&v);
-    GrB_free(&components);
+    GrB_free(&visited);
+    GrB_free(&cc_ids);
     GrB_finalize();
 }

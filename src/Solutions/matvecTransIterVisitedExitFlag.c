@@ -68,12 +68,10 @@ int main(int argc, char** argv)
 
     do
     {
-        GrB_eWiseAdd(v, GrB_NULL, GrB_NULL,
-                     GrB_LOR, v, w, GrB_NULL);
+        GrB_eWiseAdd(v, GrB_NULL, GrB_NULL, GrB_LOR, v, w, GrB_NULL);
         pretty_print_vector_UINT64(v, "visited");
 
-        GrB_mxv(w, v, GrB_NULL,
-                GxB_LOR_LAND_BOOL, graph, w, desc);
+        GrB_mxv(w, v, GrB_NULL, GxB_LOR_LAND_BOOL, graph, w, desc);
         pretty_print_vector_UINT64(w, "wavefront");
 
         GrB_Vector_nvals(&nvals, w);

@@ -22,7 +22,7 @@ LIBDIR      = ../lib
 
 include make.def
 
-SOURCES		= BuildGraph.c AnalyzeGraph.c AnalyzeGraph_final.c
+SOURCES		= BuildGraph.c AnalyzeGraph.c
 
 OBJECTS		= $(SOURCES:.c=.o)
 TARGETS		= $(SOURCES:.c=.exe)
