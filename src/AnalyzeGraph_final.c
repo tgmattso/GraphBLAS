@@ -32,6 +32,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include "GraphBLAS.h"
 #include "LAGraph.h"
 #include "tutorial_utils.h"
 
@@ -50,7 +51,9 @@ void eq_target(void *z, const void *x)
 //------------------------------------------------------------------------------
 // BFS visited: (from matvecTransIterVisitedExitFlag.c)
 //------------------------------------------------------------------------------
-GrB_Info BFS(GrB_Matrix const A, GrB_Index src_node, GrB_Vector v)
+GrB_Info BFS(GrB_Matrix const A,
+             GrB_Index        src_node,
+             GrB_Vector       v)
 {
     GrB_Index n;
     GrB_Matrix_nrows(&n, A);
@@ -58,21 +61,24 @@ GrB_Info BFS(GrB_Matrix const A, GrB_Index src_node, GrB_Vector v)
     GrB_Vector_new(&w, GrB_BOOL, n);  // wavefront
     GrB_Vector_setElement(w, true, src_node);
 
-    GrB_Descriptor desc;                          // Descriptor for vxm: replace+scmp
+    GrB_Descriptor desc;    // Descriptor for vxm: replace+scmp+trans
     GrB_Descriptor_new(&desc);
+    GrB_Descriptor_set(desc, GrB_INP0, GrB_TRAN);
     GrB_Descriptor_set(desc, GrB_MASK, GrB_SCMP);
     GrB_Descriptor_set(desc, GrB_OUTP, GrB_REPLACE);
 
-    // traverse to neighbors of a frontier iteratively starting with SRC_NODE
+    // traverse to neighbors of a frontier iteratively starting with src_node
     GrB_Index nvals = 0;
 
     do
     {
         GrB_eWiseAdd(v, GrB_NULL, GrB_NULL, GrB_LOR, v, w, GrB_NULL);
-        GrB_vxm(w, v, GrB_NULL, GxB_LOR_LAND_BOOL, w, A, desc);
+        GrB_mxv(w, v, GrB_NULL, GxB_LOR_LAND_BOOL, A, w, desc);
         GrB_Vector_nvals(&nvals, w);
     } while (nvals > 0);
 
+    GrB_free(&w);
+    GrB_free(&desc);
     return GrB_SUCCESS;
 }
 

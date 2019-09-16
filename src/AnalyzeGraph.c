@@ -32,8 +32,6 @@
 
 #include <stdio.h>
 #include <assert.h>
-#include <math.h>
-
 #include "GraphBLAS.h"
 #include "LAGraph.h"
 #include "tutorial_utils.h"

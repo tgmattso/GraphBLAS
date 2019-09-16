@@ -28,7 +28,8 @@ SOURCES 	= BuildAdjMatTuple.c BuildAdjMatIndVec.c \
 		matvecTransIterVisited.c \
 		matvecTransIterVisitedExitFlag.c \
 		matvecTransIterLevels.c \
-		bfs_level.c
+		bfs_level.c \
+		connected_components.c
 
 OBJECTS		= $(SOURCES:.c=.o)
 TARGETS		= $(SOURCES:.c=.exe)
