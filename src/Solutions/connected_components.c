@@ -72,25 +72,16 @@ int main(int argc, char** argv)
 {
     GrB_init(GrB_BLOCKING);
 
-    GrB_Index const NUM_NODES = 14;
-    GrB_Index const NUM_EDGES = 40;
-    GrB_Index row_indices[] =
-        {0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 6, 6, 6, 6,
-         7, 7, 8, 8, 8, 9, 9, 9,10,10,10,11,11,11,12,12,13,13,13,13};
-    GrB_Index col_indices[] =
-        {1, 3, 0, 4, 6, 3, 5, 6, 0, 2, 6, 1, 5, 6, 2, 4, 1, 2, 3, 4,
-         8,10, 7,11,13,10,12,13, 7, 9,13, 8,12,13, 9,11, 8, 9,10,11};
-
-    bool values[] = {true, true, true, true, true, true, true, true,
-                     true, true, true, true, true, true, true, true,
-                     true, true, true, true, true, true, true, true,
-                     true, true, true, true, true, true, true, true,
-                     true, true, true, true, true, true, true, true};
+    GrB_Index const NUM_NODES =  9;
+    GrB_Index const NUM_EDGES = 18;
+    GrB_Index row_indices[] = {0, 0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6, 7, 7, 8, 8, 8};
+    GrB_Index col_indices[] = {1, 4, 8, 0, 8, 6, 5, 7, 0, 8, 3, 7, 2, 3, 5, 0, 1, 4};
+    uint64_t values[]       = {1, 2, 1, 1, 3, 4, 1, 2, 2, 5, 1, 2, 4, 2, 2, 1, 3, 5};
     GrB_Matrix graph;
 
-    GrB_Matrix_new(&graph, GrB_BOOL, NUM_NODES, NUM_NODES);
-    GrB_Matrix_build(graph, row_indices, col_indices, (bool*)values,
-                     NUM_EDGES, GrB_LOR);
+    GrB_Matrix_new(&graph, GrB_UINT64, NUM_NODES, NUM_NODES);
+    GrB_Matrix_build(graph, row_indices, col_indices, values,
+                     NUM_EDGES, GrB_PLUS_UINT64);
 
     pretty_print_matrix_UINT64(graph, "GRAPH");
 
@@ -116,6 +107,8 @@ int main(int argc, char** argv)
                        src, GrB_ALL, NUM_NODES, GrB_NULL);
             ++num_ccs;
         }
+        else
+            printf ("Skipping %ld\n", src);
         GrB_Vector_clear(visited);
     }
 
