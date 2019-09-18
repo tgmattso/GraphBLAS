@@ -46,19 +46,14 @@ GrB_Info BFS(GrB_Matrix const graph,
     GrB_Descriptor_set(desc, GrB_MASK, GrB_SCMP);
     GrB_Descriptor_set(desc, GrB_OUTP, GrB_REPLACE);
 
-    pretty_print_vector_UINT64(w, "wavefront(src)");
-
     // traverse to neighbors of a frontier iteratively starting with src_node
     GrB_Index nvals = 0;
 
     do
     {
-        GrB_eWiseAdd(v, GrB_NULL, GrB_NULL, GrB_LOR, v, w, GrB_NULL);
-        pretty_print_vector_UINT64(v, "visited");
-
+        //GrB_eWiseAdd(v, GrB_NULL, GrB_NULL, GrB_LOR, v, w, GrB_NULL);
+        GrB_assign(v, w, GrB_NULL, true, GrB_ALL, num_nodes, GrB_NULL);
         GrB_mxv(w, v, GrB_NULL, GxB_LOR_LAND_BOOL, graph, w, desc);
-        pretty_print_vector_UINT64(w, "wavefront");
-
         GrB_Vector_nvals(&nvals, w);
     } while (nvals > 0);
 
@@ -98,6 +93,7 @@ int main(int argc, char** argv)
         if (GrB_NO_VALUE ==
             GrB_Vector_extractElement(&tmp, cc_ids, src))
         {
+            printf ("Processing node %ld\n", src);
             // Traverse from src_node marking all visited nodes
             BFS(graph, src, visited);
 
@@ -108,7 +104,7 @@ int main(int argc, char** argv)
             ++num_ccs;
         }
         else
-            printf ("Skipping %ld\n", src);
+            printf ("Skipping node %ld\n", src);
         GrB_Vector_clear(visited);
     }
 

@@ -51,14 +51,14 @@ void eq_target(void *z, const void *x)
 //------------------------------------------------------------------------------
 // BFS visited: (from matvecTransIterVisitedExitFlag.c)
 //------------------------------------------------------------------------------
-GrB_Info BFS(GrB_Matrix const A,
-             GrB_Index        src_node,
-             GrB_Vector       v)
+GrB_Info BFS(GrB_Matrix const A,         // weighted adjacency matrix (positive)
+             GrB_Index        src_node,  // root node for BFS
+             GrB_Vector       v)         // vector of BOOL
 {
-    GrB_Index n;
-    GrB_Matrix_nrows(&n, A);
+    GrB_Index num_nodes;
+    GrB_Matrix_nrows(&num_nodes, A);
     GrB_Vector w;
-    GrB_Vector_new(&w, GrB_BOOL, n);  // wavefront
+    GrB_Vector_new(&w, GrB_BOOL, num_nodes);  // wavefront
     GrB_Vector_setElement(w, true, src_node);
 
     GrB_Descriptor desc;    // Descriptor for vxm: replace+scmp+trans
@@ -72,7 +72,8 @@ GrB_Info BFS(GrB_Matrix const A,
 
     do
     {
-        GrB_eWiseAdd(v, GrB_NULL, GrB_NULL, GrB_LOR, v, w, GrB_NULL);
+        //GrB_eWiseAdd(v, GrB_NULL, GrB_NULL, GrB_LOR, v, w, GrB_NULL);
+        GrB_assign(v, w, GrB_NULL, true, GrB_ALL, num_nodes, GrB_NULL);
         GrB_mxv(w, v, GrB_NULL, GxB_LOR_LAND_BOOL, A, w, desc);
         GrB_Vector_nvals(&nvals, w);
     } while (nvals > 0);
