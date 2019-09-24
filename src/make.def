@@ -14,15 +14,12 @@
 # Authors: Scott McMillan, Timothy G. Mattson
 #
 
-# Project root not used yet
-PROJECT_ROOT	= some_path_to/HPEC18_tutorial/code
-
 PLATFORM := $(shell uname -s)
 
 CC	= UNKNOW_PLATFORM
 
 ifeq ($(PLATFORM),Linux)
-	CC	= gcc
+	CC	= gcc -std=c11 -fopenmp
 	OPTS	= -g
 	#OPTS	= -Ofast -march=native -DNDEBUG
 	#OPTS	= -g -fsanitize=address
@@ -33,7 +30,7 @@ ifeq ($(PLATFORM),Linux)
 endif
 
 ifeq ($(PLATFORM),Darwin)
-	CC	= icc -std=c11
+	CC	= gcc-9 -std=c11 -fopenmp
 	OPTS	= -g
 	WFLAGS	= -Wall
 	DEFS	=
