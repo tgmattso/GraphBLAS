@@ -14,11 +14,10 @@
 # Authors: Scott McMillan, Timothy G. Mattson
 # 
 
-# Project root not used yet
-PROJECT_ROOT	= some_path_to/HPEC18_tutorial/code
+PROJECT_ROOT	= ${CURDIR}/..
 
-INCDIR      = ../include
-LIBDIR      = ../lib
+INCDIR      = $(PROJECT_ROOT)/include
+LIBDIR      = $(PROJECT_ROOT)/lib
 
 include make.def
 

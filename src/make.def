@@ -14,9 +14,6 @@
 # Authors: Scott McMillan, Timothy G. Mattson
 #
 
-# Project root not used yet
-PROJECT_ROOT	= some_path_to/HPEC18_tutorial/code
-
 PLATFORM := $(shell uname -s)
 
 CC	= UNKNOW_PLATFORM
