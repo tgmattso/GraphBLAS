@@ -103,11 +103,11 @@ int main (int argc, char **argv)
 
     t = LAGraph_toc(tic);
     printf("*** Step 2: Elapsed time: %g sec\n", t);
-    printf("Num nodes:  %ld\n", num_rows);
-    printf("Num edges:  %ld\n", num_vals);
+    printf("Num nodes:  %ld\n", (unsigned long)num_rows);
+    printf("Num edges:  %ld\n", (unsigned long)num_vals);
     printf("Avg degree: %lf\n", ((double)num_vals)/((double)num_rows));
-    printf("Max degree: %ld\n", max_degree);
-    printf("Min degree: %ld\n", min_degree);
+    printf("Max degree: %ld\n", (unsigned long)max_degree);
+    printf("Min degree: %ld\n", (unsigned long)min_degree);
 
     GrB_Index target_index = 0;
     for (GrB_Index ix = 0; ix < num_rows; ++ix)
@@ -119,7 +119,7 @@ int main (int argc, char **argv)
             {
                 // This is the author with the most coauthor/paper combos at HPEC
                 target_index = ix;
-                printf("Node with max degree (target ID): %ld\n", target_index);
+                printf("Node with max degree (target ID): %ld\n", (unsigned long)target_index);
             }
         }
     }
@@ -141,14 +141,14 @@ int main (int argc, char **argv)
     t = LAGraph_toc(tic);
     printf ("*** Step 3: Elapsed time: %g sec\n", t);
 
-    printf("Number of connected components: %ld\n", num_components);
+    printf("Number of connected components: %ld\n", (unsigned long)num_components);
 
     //pretty_print_vector_UINT64(components, "Connected components");
 
     GrB_Index cluster_num = 666;
     GrB_Vector_extractElement(&cluster_num, components, target_index);
     printf("ID for component containing target ID %ld: %ld\n",
-           target_index, cluster_num);
+           (unsigned long)target_index, (unsigned long)cluster_num);
 
     //===========================================================
     printf("*** Step 4: Find all the nodes from the target ID's cluster.\n");
@@ -188,8 +188,8 @@ int main (int argc, char **argv)
     t = LAGraph_toc(tic);
     printf("*** Step 4: Elapsed time: %g sec\n", t);
 
-    printf("Cluster mask nvals (after masking): %ld\n", nc);
-    printf("Component size: %ld\n", component_size);
+    printf("Cluster mask nvals (after masking): %ld\n", (unsigned long)nc);
+    printf("Component size: %ld\n", (unsigned long)component_size);
 
     //===========================================================
     printf("*** Step 5: extract and perform PageRank on the target component.\n");
@@ -226,8 +226,10 @@ int main (int argc, char **argv)
         }
     }
 
-    printf("Author with the highest rank: %ld (%lf)\n", max_rank_id, max_rank);
-    printf("Author with the smallest rank: %ld (%lf)\n", min_rank_id, min_rank);
+    printf("Author with the highest rank: %ld (%lf)\n", 
+                        (unsigned long)max_rank_id, max_rank);
+    printf("Author with the smallest rank: %ld (%lf)\n", 
+                        (unsigned long)min_rank_id, min_rank);
 
     GrB_Index count = 0;
     double threshold = 0.25*max_rank;
@@ -239,12 +241,12 @@ int main (int argc, char **argv)
         GrB_Vector_extractElement(&rank, pr, ix);
         if (rank > threshold)
         {
-            printf("%ld\t%lf\n", cluster_indices[ix], rank);
+            printf("%ld\t%lf\n", (unsigned long)cluster_indices[ix], rank);
             ++count;
         }
     }
 
-    printf("Num authors with rank > %lf: %ld\n", threshold, count);
+    printf("Num authors with rank > %lf: %ld\n", threshold, (unsigned long)count);
 
     //===========================================================
     GrB_free(&A_comp);
